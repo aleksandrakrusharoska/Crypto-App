@@ -7,3 +7,4 @@
 Линк до апликацијата: https://crypto-main-app-achcf2e6bxfrcse3.polandcentral-01.azurewebsites.net/
 
 
+**Изработено од:** Александра Крушароска
