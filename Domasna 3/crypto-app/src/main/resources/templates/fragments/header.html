@@ -1,0 +1,55 @@
+<header class="app-header py-2">
+    <div class="container">
+        <div class="header-inner">
+            <div class="header-left">
+                <div class="logo">
+                    <span class="logo-pink">Crypto</span>
+                    <span class="logo-blue">App</span>
+                </div>
+            </div>
+            <div class="header-center">
+                <nav>
+                    <ul class="nav nav-fixed gap-5">
+                        <li class="nav-item nav-link-wrapper"
+                            th:classappend="${activePage}=='coins' ? 'active' : ''">
+                            
+                            <a th:if="${activePage}!='coins'"
+                               th:href="@{/}"
+                               class="nav-link">
+                                Coins
+                            </a>
+                            
+                            <span th:if="${activePage}=='coins'"
+                                  class="nav-link nav-disabled">
+                                Coins
+                            </span>
+                            
+                            <div class="nav-underline"></div>
+                        </li>
+                        <li class="nav-item nav-link-wrapper"
+                            th:classappend="${activePage}=='insights' ? 'active' : ''">
+                            
+                            <!-- дозволено само ако НЕ сме на coins -->
+                            <a th:if="${activePage}!='coins' AND ${activePage}!='insights'"
+                               th:href="@{/insights(symbol='BTC')}"
+                               class="nav-link">
+                                Insights
+                            </a>
+                            
+                            <span th:if="${activePage}=='coins' OR ${activePage}=='insights'"
+                                  class="nav-link nav-disabled">
+                                Insights
+                            </span>
+                            
+                            <div class="nav-underline"></div>
+                        </li>
+                    
+                    </ul>
+                </nav>
+            </div>
+            
+            <div class="header-right"></div>
+        
+        </div>
+    </div>
+</header>

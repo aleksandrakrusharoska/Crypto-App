@@ -1,0 +1,66 @@
+services:
+
+  database:
+    image: postgres:17
+    container_name: database
+    environment:
+      POSTGRES_DB: crypto_app
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: aleks123
+    ports:
+      - "54324:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  main-app:
+    build: ./main-app
+    container_name: main-app
+    ports:
+      - "9090:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/crypto_app
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=aleks123
+      - TECHNICAL_SERVICE_URL=http://technical-service:8080
+      - SENTIMENT_SERVICE_URL=http://sentiment-onchain-service:8000
+      - LSTM_SERVICE_URL=http://lstm-service:8000
+    depends_on:
+      - database
+      - technical-service
+      - sentiment-onchain-service
+      - lstm-service
+
+  technical-service:
+    build: ./Microservices/technical-analysis-service
+    container_name: technical-service
+    ports:
+      - "9091:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/crypto_app
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=aleks123
+    depends_on:
+      - database
+
+  sentiment-onchain-service:
+    build: ./Microservices/sentiment-onchain-service
+    container_name: sentiment-onchain-service
+    ports:
+      - "9092:8000"
+    env_file:
+      - ./Microservices/sentiment-onchain-service/.env
+    depends_on:
+      - database
+
+  lstm-service:
+    build: ./Microservices/lstm-prediction-service
+    container_name: lstm-service
+    ports:
+      - "9093:8000"
+    env_file:
+      - ./Microservices/lstm-prediction-service/.env
+    depends_on:
+      - database
+
+volumes:
+  db-data:

@@ -1,0 +1,207 @@
+<section class="content py-5">
+    <div class="container">
+
+        <h1 class="page-title text-center mb-3"
+            th:text="${tab} == 'table'
+             ? ${selectedSymbol} + ' – Weekly Market Data'
+             : 'Price History'">
+        </h1>
+
+        <div class="custom-tabs d-flex justify-content-center my-3">
+
+            <!-- TABLE -->
+            <a th:href="@{/insights(symbol=${selectedSymbol}, tab='table')}"
+               class="tab-btn"
+               th:classappend="${tab}=='table' ? ' active' : ''">
+                Table
+            </a>
+
+            <!-- CHART -->
+            <a th:href="@{/insights(symbol=${selectedSymbol}, tab='chart')}"
+               class="tab-btn"
+               th:classappend="${tab}=='chart' ? ' active' : ''">
+                Chart
+            </a>
+
+        </div>
+
+
+        <!-- TABLE VIEW -->
+        <div th:if="${tab}=='table'">
+            <div class="market-table-card">
+                <div class="table-responsive">
+                    <table class="table table-sm market-table align-middle text-end mb-0">
+                        <thead>
+                        <tr>
+                            <th class="text-left">Date</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
+                            <th>Close</th>
+                            <th>Volume</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${weeklyData}">
+                            <td class="text-left" th:text="${row.date}"></td>
+                            <td th:text="${row.open}"></td>
+                            <td th:text="${row.high}"></td>
+                            <td th:text="${row.low}"></td>
+                            <td th:text="${row.close}"></td>
+                            <td th:text="${row.volumeTo}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHART VIEW -->
+        <div th:if="${tab}=='chart'">
+            <div class="row justify-content-center">
+                <div class="col-lg-9">
+                    <div class="chart-card">
+
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="price-label small text-muted"
+                                     th:text="${selectedSymbol} + ' (Last close)'"></div>
+                                <div class="price-value"
+                                     th:text="${historyData.get(historyData.size()-1).close}">
+                                </div>
+                            </div>
+
+                            <div class="small text-muted text-end">
+                                <span>Period: </span>
+                                <span th:text="${periodStart}"></span>
+                                <span> – </span>
+                                <span th:text="${periodEnd}"></span>
+                            </div>
+                        </div>
+
+                        <div class="chart-wrapper">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+            <script th:inline="javascript">
+                /*<![CDATA[*/
+                const rawLabels = /*[[${dates}]]*/ [];
+                const rawValues = /*[[${closePrices}]]*/ [];
+                /*]]>*/
+
+                const labels = [...rawLabels];
+                const values = [...rawValues];
+
+                if (labels.length > 0) {
+                    const firstLabel = labels[0];
+                    const firstYear = parseInt(firstLabel.substring(0, 4), 10);
+
+                    if (!firstLabel.startsWith(firstYear + '-01-01')) {
+                        labels.unshift(`${firstYear}-01-01`);
+                        values.unshift(null);
+                    }
+
+                    const lastLabel = labels[labels.length - 1];
+                    const lastYear = parseInt(lastLabel.substring(0, 4), 10);
+
+                    labels.push(`${lastYear + 1}-01-01`);
+                    values.push(null);
+
+                    labels.push(`${lastYear + 2}-01-01`);
+                    values.push(null);
+                }
+
+                const ctx = document.getElementById('priceChart');
+
+                if (ctx && labels.length > 0) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: values,
+                                borderColor: '#05C274',
+                                backgroundColor: 'rgba(5, 194, 116, 0.12)',
+                                pointRadius: 0,
+                                pointHitRadius: 6,
+                                borderWidth: 2,
+                                tension: 0.25,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+
+                            layout: {
+                                padding: {
+                                    left: 12,
+                                    right: 12
+                                }
+                            },
+
+                            plugins: {
+                                legend: {display: false},
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'time',
+                                    time: {
+                                        parser: 'yyyy-MM-dd',
+                                        unit: 'year',
+                                        displayFormats: {
+                                            year: 'yyyy'
+                                        }
+                                    },
+                                    grid: {
+                                        display: false,
+                                        drawTicks: false
+                                    },
+                                    border: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        source: 'auto',
+                                        autoSkip: false,
+                                        stepSize: 1,
+                                        maxRotation: 0,
+                                        padding: 8,
+                                        callback: function (value) {
+                                            const date = new Date(value);
+                                            return date.getFullYear();
+                                        }
+                                    }
+                                },
+                                y: {
+                                    border: {display: false},
+                                    ticks: {
+                                        padding: 8,
+                                        callback: function (val) {
+                                            return val.toLocaleString();
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0,0,0,0.04)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            </script>
+
+        </div>
+
+    </div>
+</section>
+

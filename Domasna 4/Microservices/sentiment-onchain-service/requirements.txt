@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+cachetools
+numpy<2.0
+python-dotenv
+pydantic
+torch==2.1.0+cpu
+transformers==4.41.2

@@ -1,0 +1,54 @@
+<header class="app-header py-2">
+    <div class="container">
+        <div class="row align-items-center">
+
+            <div class="col-4">
+                <div class="logo fw-semibold text-white">Crypto App</div>
+            </div>
+
+            <div class="col-4 d-flex justify-content-center">
+                <nav>
+                    <ul class="nav justify-content-center align-items-center gap-5">
+
+                        <li class="nav-item nav-link-wrapper"
+                            th:classappend="${activePage}=='coins' ? 'active' : ''">
+
+                            <a th:if="${activePage}!='coins'"
+                               th:href="@{/}"
+                               class="nav-link">
+                                Coins
+                            </a>
+
+                            <span th:if="${activePage}=='coins'"
+                                  class="nav-link nav-disabled">
+                                Coins
+                            </span>
+
+                            <div class="nav-underline"></div>
+                        </li>
+
+                        <li class="nav-item nav-link-wrapper"
+                            th:classappend="${activePage}=='insights' ? 'active' : ''">
+
+                            <a th:if="${activePage}!='insights' AND ${activePage}!='coins'"
+                               th:href="@{/insights(symbol='BTC')}"
+                               class="nav-link">
+                                Insights
+                            </a>
+
+                            <span th:if="${activePage}=='insights' OR ${activePage}=='coins'"
+                                  class="nav-link nav-disabled">
+                                Insights
+                            </span>
+
+                            <div class="nav-underline"></div>
+                        </li>
+
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="col-4"></div>
+        </div>
+    </div>
+</header>

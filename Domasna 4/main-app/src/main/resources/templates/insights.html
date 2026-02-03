@@ -1,0 +1,941 @@
+<section class="content py-5">
+    <div class="container">
+        
+        <h1 class="page-title text-center mb-4"
+            th:text="${tab} == 'table'
+             ? ${selectedSymbol} + ' – Weekly Market Data'
+             : 'Price History'">
+        </h1>
+        
+        <div class="custom-tabs d-flex justify-content-center mt-3 mb-4">
+            
+            <!-- Table -->
+            <a th:href="@{/insights(symbol=${selectedSymbol}, tab='table')}"
+               class="tab-btn"
+               th:classappend="${tab}=='table' ? ' active' : ''">
+                Table
+            </a>
+            
+            <!-- Chart -->
+            <a th:href="@{/insights(symbol=${selectedSymbol}, tab='chart')}"
+               class="tab-btn"
+               th:classappend="${tab}=='chart' ? ' active' : ''">
+                Chart
+            </a>
+        
+        </div>
+        
+        
+        <!-- Table view -->
+        <div th:if="${tab}=='table'">
+            <div class="market-table-card">
+                <div class="table-responsive">
+                    <table class="table table-sm market-table align-middle text-end mb-0">
+                        <thead>
+                        <tr>
+                            <th class="text-left">Date</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
+                            <th>Close</th>
+                            <th>Volume</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${weeklyData}">
+                            <td class="text-left" th:text="${row.date}"></td>
+                            <td th:text="${row.open}"></td>
+                            <td th:text="${row.high}"></td>
+                            <td th:text="${row.low}"></td>
+                            <td th:text="${row.close}"></td>
+                            <td th:text="${row.volumeTo}"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart view -->
+        <div th:if="${tab}=='chart'">
+            <div class="row g-4 mt-4">
+                
+                <div class="col-lg-8">
+                    <div class="chart-card h-100">
+                        
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <div class="price-label small text-muted"
+                                     th:text="${selectedSymbol} + ' (Last close)'"></div>
+                                <div class="price-value"
+                                     th:text="${historyData.get(historyData.size()-1).close}">
+                                </div>
+                            </div>
+                            
+                            <div class="small text-muted text-end">
+                                <span>Period: </span>
+                                <span th:text="${periodStart}"></span>
+                                <span> – </span>
+                                <span th:text="${periodEnd}"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-wrapper">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="coin-card p-4" style="background:#F8EFF5; border-color:#D9BDD1;">
+                        
+                        <h5 class="text-center mb-4" style="color:#6B3A5A; font-weight:600;">
+                            Next Close Price
+                        </h5>
+                        
+                        <!-- Date (only when prediction exists) -->
+                        <div class="small text-muted text-center mb-3"
+                             th:if="${prediction != null}"
+                             th:text="'Date: ' + ${tomorrowDate}">
+                        </div>
+                        
+                        <!-- Prediction box -->
+                        <div class="prediction-box">
+                            
+                            <!-- Empty -->
+                            <div id="emptyBox" th:if="${prediction == null}">
+                                <span class="placeholder-text">Click the button</span>
+                            </div>
+                            
+                            <!-- Loading -->
+                            <div id="loadingBox" style="display:none;">
+                                <div class="loading-container">
+                                    <div class="spinner"></div>
+                                    <div class="small pulse">The model is thinking<span class="dots"></span></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Result -->
+                            <div id="predictionResult" th:if="${prediction != null}">
+                                <div class="prediction-text"
+                                     th:text="${#numbers.formatDecimal(prediction.predicted_close, 1, 2)}">
+                                </div>
+                                
+                                <div class="prediction-metrics mt-2 text-muted small">
+                                    
+                                    <div>
+                                        RMSE:
+                                        <strong th:text="${prediction.rmse != null ? #numbers.formatDecimal(prediction.rmse, 1, 6) : 'N/A'}"></strong>
+                                    </div>
+                                    
+                                    <div>
+                                        MAE:
+                                        <strong th:text="${prediction.mae != null ? #numbers.formatDecimal(prediction.mae, 1, 6) : 'N/A'}"></strong>
+                                    </div>
+                                    
+                                    <div>
+                                        MAPE:
+                                        <strong th:text="${prediction.mape != null ? #numbers.formatDecimal(prediction.mape * 100, 1, 2) : 'N/A'}"></strong>%
+                                    </div>
+                                    
+                                    <div>
+                                        R²:
+                                        <strong th:text="${prediction.r2 != null ? #numbers.formatDecimal(prediction.r2, 1, 4) : 'N/A'}"></strong>
+                                    </div>
+                                
+                                </div>
+                            </div>
+                        
+                        </div>
+                        
+                        <!-- Button -->
+                        <form class="mt-3"
+                              id="predictForm"
+                              th:action="@{/insights/predict}"
+                              method="post"
+                              onsubmit="startLoader(event)">
+                            
+                            <input type="hidden" name="symbol" id="symbolValue" th:value="${selectedSymbol}"/>
+                            
+                            <button type="submit"
+                                    id="predictBtn"
+                                    class="btn app-btn-primary w-100"
+                                    style="font-weight:600; border-radius:14px;">
+                                Predict
+                            </button>
+                        </form>
+                        
+                        <!-- Status message -->
+                        <div id="statusMessage"
+                             class="small mt-2 text-start text-danger"
+                             style="display:none;">
+                        </div>
+                    
+                    </div>
+                
+                </div>
+            
+            </div>
+            
+            <!-- Technical analysis error -->
+            <div th:if="${technicalError != null}"
+                 class="alert alert-warning text-center my-4"
+                 style="border-radius:12px; font-weight:500;">
+                    <span th:text="${technicalError}">
+                        Not enough data to perform technical analysis.
+                    </span>
+            </div>
+            
+            <!-- Technical analysis -->
+            
+            <div th:if="${technicalError == null}">
+                <div class="technical-card">
+                    <span id="tfValue" th:text="${tf}" hidden></span>
+                    
+                    <!-- Hidden signals for gauges -->
+                    <!-- Daily -->
+                    <span id="oscSignal1D" th:text="${technical.dailyOscillators.signal}" hidden></span>
+                    <span id="maSignal1D" th:text="${technical.dailyMovingAverages.signal}" hidden></span>
+                    <span id="summarySignal1D" th:text="${technical.dailySummary.signal}" hidden></span>
+                    
+                    <!-- Weekly -->
+                    <span id="oscSignal1W" th:text="${technical.weeklyOscillators.signal}" hidden></span>
+                    <span id="maSignal1W" th:text="${technical.weeklyMovingAverages.signal}" hidden></span>
+                    <span id="summarySignal1W" th:text="${technical.weeklySummary.signal}" hidden></span>
+                    
+                    <!-- Monthly -->
+                    <span id="oscSignal1M" th:text="${technical.monthlyOscillators.signal}" hidden></span>
+                    <span id="maSignal1M" th:text="${technical.monthlyMovingAverages.signal}" hidden></span>
+                    <span id="summarySignal1M" th:text="${technical.monthlySummary.signal}" hidden></span>
+                    
+                    <!-- Tf toggle -->
+                    <div class="btn-group btn-group-sm mb-3 justify-content-center d-flex">
+                        <a th:href="@{/insights(symbol=${selectedSymbol}, tab='chart', tf='1D')}"
+                           class="btn ta-range-btn"
+                           th:classappend="${tf}=='1D' ? ' active' : ''">1D</a>
+                        
+                        <a th:href="@{/insights(symbol=${selectedSymbol}, tab='chart', tf='1W')}"
+                           class="btn ta-range-btn"
+                           th:classappend="${tf}=='1W' ? ' active' : ''">1W</a>
+                        
+                        <a th:href="@{/insights(symbol=${selectedSymbol}, tab='chart', tf='1M')}"
+                           class="btn ta-range-btn"
+                           th:classappend="${tf}=='1M' ? ' active' : ''">1M</a>
+                    </div>
+                    
+                    <!-- Gauges -->
+                    <div class="ta-gauges">
+                        
+                        <!-- Oscillators -->
+                        <div class="ta-gauge-card">
+                            <h6>Oscillators</h6>
+                            
+                            <div class="signal-bar" id="oscBar">
+                                <div class="segment sell"></div>
+                                <div class="segment neutral"></div>
+                                <div class="segment buy"></div>
+                            </div>
+                            
+                            <div class="gauge-stats table-like">
+                                
+                                <!-- Header -->
+                                <div class="row text-center font-weight-bold small mb-1">
+                                    <div class="col text-danger">Sell</div>
+                                    <div class="col text-muted">Neutral</div>
+                                    <div class="col text-success">Buy</div>
+                                </div>
+                                
+                                <!-- Daily -->
+                                <div class="row text-center" th:if="${tf == '1D'}">
+                                    <div class="col" th:text="${technical.dailyOscillators.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.dailyOscillators.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.dailyOscillators.stats.buy}">0</div>
+                                </div>
+                                
+                                <!-- Weekly -->
+                                <div class="row text-center" th:if="${tf == '1W'}">
+                                    <div class="col" th:text="${technical.weeklyOscillators.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.weeklyOscillators.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.weeklyOscillators.stats.buy}">0</div>
+                                </div>
+                                
+                                <!-- Monthly -->
+                                <div class="row text-center" th:if="${tf == '1M'}">
+                                    <div class="col" th:text="${technical.monthlyOscillators.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.monthlyOscillators.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.monthlyOscillators.stats.buy}">0</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Summary -->
+                        <div class="ta-gauge-card highlight">
+                            <h6>Summary</h6>
+                            
+                            <div class="signal-bar highlight" id="summaryBar">
+                                <div class="segment sell"></div>
+                                <div class="segment neutral"></div>
+                                <div class="segment buy"></div>
+                            </div>
+                            
+                            <div class="gauge-stats table-like">
+                                
+                                <!-- Header -->
+                                <div class="row text-center font-weight-bold small mb-1">
+                                    <div class="col text-danger">Sell</div>
+                                    <div class="col text-muted">Neutral</div>
+                                    <div class="col text-success">Buy</div>
+                                </div>
+                                
+                                <!-- Daily -->
+                                <div class="row text-center" th:if="${tf == '1D'}">
+                                    <div class="col" th:text="${technical.dailySummary.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.dailySummary.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.dailySummary.stats.buy}">0</div>
+                                </div>
+                                
+                                <!-- Weekly -->
+                                <div class="row text-center" th:if="${tf == '1W'}">
+                                    <div class="col" th:text="${technical.weeklySummary.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.weeklySummary.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.weeklySummary.stats.buy}">0</div>
+                                </div>
+                                
+                                <!-- Monthly -->
+                                <div class="row text-center" th:if="${tf == '1M'}">
+                                    <div class="col" th:text="${technical.monthlySummary.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.monthlySummary.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.monthlySummary.stats.buy}">0</div>
+                                </div>
+                            </div>
+                        
+                        </div>
+                        
+                        <!-- Moving averages -->
+                        <div class="ta-gauge-card">
+                            <h6>Moving Averages</h6>
+                            
+                            <div class="signal-bar" id="maBar">
+                                <div class="segment sell"></div>
+                                <div class="segment neutral"></div>
+                                <div class="segment buy"></div>
+                            </div>
+                            
+                            <div class="gauge-stats table-like">
+                                
+                                <!-- Header -->
+                                <div class="row text-center font-weight-bold small mb-1">
+                                    <div class="col text-danger">Sell</div>
+                                    <div class="col text-muted">Neutral</div>
+                                    <div class="col text-success">Buy</div>
+                                </div>
+                                
+                                <!-- Daily -->
+                                <div class="row text-center" th:if="${tf == '1D'}">
+                                    <div class="col" th:text="${technical.dailyMovingAverages.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.dailyMovingAverages.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.dailyMovingAverages.stats.buy}">0</div>
+                                </div>
+                                
+                                <!-- Weekly -->
+                                <div class="row text-center" th:if="${tf == '1W'}">
+                                    <div class="col" th:text="${technical.weeklyMovingAverages.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.weeklyMovingAverages.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.weeklyMovingAverages.stats.buy}">0</div>
+                                </div>
+                                
+                                <!-- Monthly -->
+                                <div class="row text-center" th:if="${tf == '1M'}">
+                                    <div class="col" th:text="${technical.monthlyMovingAverages.stats.sell}">0</div>
+                                    <div class="col" th:text="${technical.monthlyMovingAverages.stats.neutral}">0</div>
+                                    <div class="col" th:text="${technical.monthlyMovingAverages.stats.buy}">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button id="toggleIndicatorsBtn"
+                                class="btn btn-outline-secondary btn-sm px-3 py-1"
+                                style="font-weight:500; border-radius:14px;"
+                                onclick="toggleIndicators()">
+                            Show indicator details
+                        </button>
+                    </div>
+                    
+                    <div id="indicatorTable"
+                         class="mt-4"
+                         style="display:none">
+                        
+                        <table class="table table-sm table-hover align-middle">
+                            <thead>
+                            <tr>
+                                <th>Indicator</th>
+                                <th class="text-end">Value</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                            </thead>
+                            
+                            <!-- Daily -->
+                            <tbody th:if="${tf == '1D'}">
+                            <tr th:each="ind : ${technical.dailyIndicatorDetails}">
+                                <td th:text="${ind.name}"></td>
+                                
+                                <td class="text-end"
+                                    th:text="${#numbers.formatDecimal(ind.value, 2, 2)}">
+                                </td>
+                                
+                                <td class="text-end"
+                                    th:text="${ind.action}"
+                                    th:classappend="
+                                            ${ind.action.name() == 'BUY'} ? 'text-success' :
+                                            (${ind.action.name() == 'SELL'} ? 'text-danger' : 'text-neutral')">
+                                </td>
+                            </tr>
+                            </tbody>
+                            
+                            <!-- Weekly -->
+                            <tbody th:if="${tf == '1W'}">
+                            <tr th:each="ind : ${technical.weeklyIndicatorDetails}">
+                                <td th:text="${ind.name}"></td>
+                                
+                                <td class="text-end"
+                                    th:text="${#numbers.formatDecimal(ind.value, 2, 2)}">
+                                </td>
+                                
+                                <td class="text-end"
+                                    th:text="${ind.action}"
+                                    th:classappend="
+                                            ${ind.action.name() == 'BUY'} ? 'text-success' :
+                                            (${ind.action.name() == 'SELL'} ? 'text-danger' : 'text-neutral')">
+                                </td>
+                            </tr>
+                            </tbody>
+                            
+                            <!-- Monthly -->
+                            <tbody th:if="${tf == '1M'}">
+                            <tr th:each="ind : ${technical.monthlyIndicatorDetails}">
+                                <td th:text="${ind.name}"></td>
+                                
+                                <td class="text-end"
+                                    th:text="${#numbers.formatDecimal(ind.value, 2, 2)}">
+                                </td>
+                                
+                                <td class="text-end"
+                                    th:text="${ind.action}"
+                                    th:classappend="
+                                            ${ind.action.name() == 'BUY'} ? 'text-success' :
+                                            (${ind.action.name() == 'SELL'} ? 'text-danger' : 'text-neutral')">
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sentiment & on-chain analysis -->
+            <button class="btn btn-outline-info btn-sm px-3 py-1 mt-5"
+                    style="font-weight:500; border-radius:14px;"
+                    onclick="loadSentimentOnChain()">
+                Sentiment and On Chain Analysis
+            </button>
+            
+            <div id="sentimentOnChainSection"
+                 class="mt-4"
+                 style="display:none; border:2px dashed #17A2B8; border-radius:14px; padding:16px;">
+                
+                <div id="sentimentOnChainContent">
+                    <div class="text-muted small">Click the button to load analysis.</div>
+                </div>
+            </div>
+        
+        
+        </div>
+        
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+        
+        <script th:inline="javascript">
+            document.addEventListener("DOMContentLoaded", function () {
+                
+                const symbol = document.getElementById("symbolValue")?.value;
+                const hasResult = document.getElementById("predictionResult");
+                
+                if (!hasResult && symbol) {
+                    checkAndStartPolling(symbol);
+                }
+            });
+            
+            let pollInterval = null;
+            
+            function setUIState(state) {
+                const loading = document.getElementById("loadingBox");
+                const empty = document.getElementById("emptyBox");
+                const result = document.getElementById("predictionResult");
+                const btn = document.getElementById("predictBtn");
+                const msg = document.getElementById("statusMessage");
+                
+                if (state === "IDLE") {
+                    loading.style.display = "none";
+                    if (empty) empty.style.display = "block";
+                    if (btn) btn.disabled = false;
+                    if (msg) msg.style.display = "none";
+                }
+                
+                if (state === "LOADING") {
+                    if (empty) empty.style.display = "none";
+                    if (result) result.style.display = "none";
+                    loading.style.display = "block";
+                    if (btn) btn.disabled = true;
+                    
+                    if (msg) {
+                        msg.style.display = "block";
+                        msg.className = "small mt-2 text-start text-muted";
+                        msg.innerText = "Training in progress. Please wait…";
+                    }
+                }
+                
+                if (state === "DONE") {
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                    
+                    loading.style.display = "none";
+                    if (btn) btn.disabled = false;
+                    if (msg) msg.style.display = "none";
+                }
+                
+                if (state === "ERROR") {
+                    loading.style.display = "none";
+                    if (btn) btn.disabled = false;
+                    
+                    if (msg) {
+                        msg.style.display = "block";
+                        msg.className = "small mt-2 text-start text-danger";
+                        msg.innerText = "Prediction failed. Please try again.";
+                    }
+                }
+            }
+            
+            function checkAndStartPolling(symbol) {
+                fetch(`/api/predict/${symbol}/status`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === "STARTED" || data.status === "RUNNING") {
+                                startPolling(symbol);
+                            }
+                            
+                            if (data.status === "FAILED" || data.status === "ERROR") {
+                                setUIState("ERROR");
+                            }
+                        });
+            }
+            
+            function startPolling(symbol) {
+                if (pollInterval) return;
+                
+                setUIState("LOADING");
+                
+                pollInterval = setInterval(() => {
+                    fetch(`/api/predict/${symbol}/status`)
+                            .then(res => res.json())
+                            .then(data => {
+                                
+                                if (data.status === "STARTED" || data.status === "RUNNING") {
+                                    return;
+                                }
+                                
+                                if (data.status === "DONE") {
+                                    clearInterval(pollInterval);
+                                    pollInterval = null;
+                                    window.location.href = `/insights?symbol=${symbol}&tab=chart`;
+                                }
+                                
+                                if (data.status === "FAILED" || data.status === "ERROR") {
+                                    clearInterval(pollInterval);
+                                    pollInterval = null;
+                                    setUIState("ERROR");
+                                }
+                                
+                            })
+                            .catch(() => {
+                                clearInterval(pollInterval);
+                                pollInterval = null;
+                                setUIState("ERROR");
+                            });
+                }, 3000);
+            }
+            
+            function startLoader(event) {
+                event.preventDefault();
+                setUIState("LOADING");
+                document.getElementById("predictForm").submit();
+            }
+        </script>
+        
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const rawLabels = /*[[${dates}]]*/ [];
+            const rawValues = /*[[${closePrices}]]*/ [];
+            /*]]>*/
+            
+            const labels = [...rawLabels];
+            const values = [...rawValues];
+            
+            if (labels.length > 0) {
+                const firstLabel = labels[0];
+                const firstYear = parseInt(firstLabel.substring(0, 4), 10);
+                
+                if (!firstLabel.startsWith(firstYear + '-01-01')) {
+                    labels.unshift(`${firstYear}-01-01`);
+                    values.unshift(null);
+                }
+                
+                const lastLabel = labels[labels.length - 1];
+                const lastYear = parseInt(lastLabel.substring(0, 4), 10);
+                
+                labels.push(`${lastYear + 1}-01-01`);
+                values.push(null);
+                
+                labels.push(`${lastYear + 2}-01-01`);
+                values.push(null);
+            }
+            
+            const ctx = document.getElementById('priceChart');
+            
+            if (ctx && labels.length > 0) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            borderColor: '#05C274',
+                            backgroundColor: 'rgba(5, 194, 116, 0.12)',
+                            pointRadius: 0,
+                            pointHitRadius: 6,
+                            borderWidth: 2,
+                            tension: 0.25,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        
+                        layout: {
+                            padding: {
+                                left: 12,
+                                right: 12
+                            }
+                        },
+                        
+                        plugins: {
+                            legend: {display: false},
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    title: function (items) {
+                                        if (!items.length) return '';
+                                        const date = new Date(items[0].parsed.x);
+                                        return date.toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: '2-digit'
+                                        });
+                                    },
+                                    label: function (context) {
+                                        return context.parsed.y.toFixed(3);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    parser: 'yyyy-MM-dd',
+                                    unit: 'year',
+                                    displayFormats: {
+                                        year: 'yyyy'
+                                    }
+                                },
+                                grid: {
+                                    display: false,
+                                    drawTicks: false
+                                },
+                                border: {
+                                    display: false
+                                },
+                                ticks: {
+                                    source: 'auto',
+                                    autoSkip: false,
+                                    stepSize: 1,
+                                    maxRotation: 0,
+                                    padding: 8,
+                                    callback: function (value) {
+                                        const date = new Date(value);
+                                        return date.getFullYear();
+                                    }
+                                }
+                            },
+                            y: {
+                                border: {display: false},
+                                ticks: {
+                                    padding: 8,
+                                    callback: function (val) {
+                                        return val.toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0,0,0,0.04)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+        
+        <script>
+            function activateSignal(barId, signal) {
+                const map = {
+                    SELL: 0,
+                    NEUTRAL: 1,
+                    BUY: 2
+                };
+                
+                const bar = document.getElementById(barId);
+                if (!bar || !signal) return;
+                
+                const segments = bar.querySelectorAll('.segment');
+                segments.forEach(s => s.classList.remove('active'));
+                
+                const index = map[signal];
+                if (index !== undefined) {
+                    segments[index].classList.add('active');
+                }
+            }
+            
+            function activateSignalFromStats(barId, card) {
+                if (!card) return;
+                
+                const valueRow = card.querySelectorAll('.row.text-center')[1];
+                if (!valueRow) return;
+                
+                const cols = valueRow.querySelectorAll('.col');
+                let max = -1;
+                let idx = -1;
+                
+                cols.forEach((col, i) => {
+                    const val = parseInt(col.innerText, 10);
+                    if (!isNaN(val) && val > max) {
+                        max = val;
+                        idx = i;
+                    }
+                });
+                
+                const map = ['SELL', 'NEUTRAL', 'BUY'];
+                activateSignal(barId, map[idx]);
+            }
+            
+            function highlightDominantStat(card) {
+                if (!card) return;
+                
+                const rows = card.querySelectorAll('.row.text-center');
+                if (rows.length < 2) return;
+                
+                const valueRow = rows[1];
+                
+                const valueCols = valueRow.querySelectorAll('.col');
+                let max = -1;
+                let dominantIndex = -1;
+                
+                valueCols.forEach((col, idx) => {
+                    const val = parseInt(col.innerText, 10);
+                    if (!isNaN(val) && val > max) {
+                        max = val;
+                        dominantIndex = idx;
+                    }
+                });
+                
+                if (dominantIndex === -1) return;
+                
+                valueCols[dominantIndex].classList.add('dominant');
+            }
+            
+            document.addEventListener('DOMContentLoaded', function () {
+                
+                const cards = [
+                    {barId: 'oscBar'},
+                    {barId: 'summaryBar'},
+                    {barId: 'maBar'}
+                ];
+                
+                cards.forEach(({barId}) => {
+                    const card = document.getElementById(barId)?.closest('.ta-gauge-card');
+                    if (!card) return;
+                    
+                    activateSignalFromStats(barId, card);
+                    highlightDominantStat(card);
+                });
+                
+            });
+            
+            function toggleIndicators() {
+                const table = document.getElementById("indicatorTable");
+                const btn = document.getElementById("toggleIndicatorsBtn");
+                
+                const isHidden = table.style.display === "none" || table.style.display === "";
+                
+                if (isHidden) {
+                    table.style.display = "block";
+                    btn.innerText = "Hide indicator details";
+                } else {
+                    table.style.display = "none";
+                    btn.innerText = "Show indicator details";
+                }
+            }
+        </script>
+        
+        <script th:inline="javascript">
+            function loadSentimentOnChain() {
+                const section = document.getElementById("sentimentOnChainSection");
+                const content = document.getElementById("sentimentOnChainContent");
+                
+                section.style.display = "block";
+                content.innerHTML = "<div class='text-muted'>Loading analysis...</div>";
+                
+                const symbol = /*[[${selectedSymbol}]]*/ 'BTC';
+                
+                fetch(`/api/analyze/${symbol}`)
+                        .then(res => {
+                            if (!res.ok) throw new Error("Failed to fetch analysis");
+                            return res.json();
+                        })
+                        .then(data => renderSentimentOnChain(data))
+                        .catch(err => {
+                            console.error(err);
+                            content.innerHTML =
+                                    "<div class='text-danger'>Failed to load sentiment & on-chain data.</div>";
+                        });
+            }
+            
+            function fmt(value, suffix = "") {
+                if (value === null || value === undefined) return "N/A";
+                if (typeof value === "number") {
+                    if (suffix === "%") return value.toFixed(2) + "%";
+                    return value.toLocaleString();
+                }
+                return value;
+            }
+            
+            function fmtBillions(value) {
+                if (value == null || isNaN(value)) return "N/A";
+                return `$${(Number(value) / 1e9).toFixed(2)}B`;
+            }
+            
+            function fmtPercent(value) {
+                if (value == null || isNaN(value)) return "N/A";
+                return `${Number(value).toFixed(2)}%`;
+            }
+            
+            function renderSentimentOnChain(data) {
+                const content = document.getElementById("sentimentOnChainContent");
+                
+                const sentiment = data?.sentiment ?? null;
+                const onchain = data?.onchain ?? null;
+                const core = onchain?.core ?? null;
+                const combined = data?.combined ?? null;
+                const tvl = onchain?.chainSpecific?.tvl ?? null;
+                
+                console.log("CORE:", core);
+                
+                content.innerHTML = `
+                    <!-- Sentiment -->
+                    <div class="analysis-card mb-3">
+                        <h6>Sentiment</h6>
+                        ${
+                        sentiment
+                                ? `
+                                    <p class="small">${sentiment.interpretation}</p>
+                                    <ul class="small">
+                                        <li>Articles analyzed: ${sentiment.articleCount}</li>
+                                        <li>Positive: ${sentiment.positiveRatio}</li>
+                                        <li>Neutral: ${sentiment.neutralRatio}</li>
+                                        <li>Negative: ${sentiment.negativeRatio}</li>
+                                    </ul>
+                                  `
+                                : `<p>Sentiment data not available.</p>`
+                }
+                    </div>
+                    
+                    <!-- On-chain -->
+                    <div class="analysis-card mb-3">
+                        <h6>On-Chain Metrics</h6>
+                        ${
+                        core
+                                ? `
+                                    <ul class="small">
+                                        <li>Market Cap: ${fmt(core.marketCap)}</li>
+                                        <li>24h Volume: ${fmt(core.volume24h)}</li>
+                                        <li>Price Change (24h): ${fmt(core.priceChange24h, "%")}</li>
+                                        <li>NVT Ratio: ${fmt(core.nvt)}</li>
+                                        ${
+                                        tvl && !tvl.error
+                                                ? `
+                                                            <li class="mt-2">
+                                                                <strong>DeFi Ecosystem</strong>
+                                                            </li>
+                                                            <li>
+                                                                DeFi Market Cap: ${fmtBillions(tvl.defiMarketCap)}
+                                                            </li>
+                                                            <li>
+                                                                DeFi Dominance: ${fmtPercent(tvl.defiDominance)}
+                                                            </li>
+                                                          `
+                                                : `
+                                                            <li class="text-muted mt-2">
+                                                                DeFi ecosystem data not available
+                                                            </li>
+                                                          `
+                                }
+                                    </ul>
+                                  `
+                                : `<p>On-chain data not available.</p>`
+                }
+                    </div>
+                    
+                    <!-- Combined -->
+                    <div class="analysis-card highlight">
+                        <h6>Combined Analysis</h6>
+                        
+                        ${
+                        combined
+                                ? `
+                        <p class="small">
+                            ${combined.explanation} = <strong>${combined.finalScore}</strong>
+                        </p>
+            
+                        <strong class="d-block mt-2">
+                            ${combined.signal}
+                        </strong>
+                    `
+                                : `<p>Combined analysis not available.</p>`
+                }
+                    </div>
+                `;
+            }
+        
+        
+        </script>
+    
+    
+    </div>
+</section>
+

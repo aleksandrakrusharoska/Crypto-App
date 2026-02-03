@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+requests
+cachetools
+
+numpy<2.0
+pandas
+scikit-learn
+
+tensorflow-cpu
+psycopg2-binary
+python-dotenv
+

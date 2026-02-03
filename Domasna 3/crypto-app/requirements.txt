@@ -1,0 +1,13 @@
+numpy
+pandas
+scikit-learn
+tensorflow
+torch
+psycopg2-binary
+matplotlib
+python-dotenv
+flask
+flask-cors
+requests
+transformers
+cachetools

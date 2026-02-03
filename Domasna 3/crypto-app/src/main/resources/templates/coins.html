@@ -1,0 +1,43 @@
+<section class="content py-5">
+    <div class="container">
+        
+        <h1 class="page-title mb-4 text-center">Market Coins</h1>
+        
+        <div class="card coin-card shadow-sm mx-auto">
+            <div class="card-body">
+                
+                <h2 class="card-title h5 mb-3">Choose Your Coin</h2>
+                
+                <form th:action="@{/insights}" method="get" class="d-flex flex-column">
+                    
+                    <div class="custom-select-wrapper">
+                        <div class="crypto-select" id="coinSelect">
+                            <div class="select-selected">
+                                <span id="selectedCoin">Pick a coin to explore</span>
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            
+                            <div class="select-items">
+                                <div class="select-item"
+                                     th:each="c : ${coins}"
+                                     th:data-value="${c.symbol}"
+                                     th:text="${c.fullName + ' (' + c.symbol + ')'}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="symbol" id="selectedValue">
+                    </div>
+                    
+                    <button type="submit" class="btn app-btn-primary btn-block">
+                        View Insights
+                    </button>
+                
+                </form>
+            </div>
+        </div>
+    
+    </div>
+</section>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title th:text="${pageTitle} ?: 'Crypto App'">Crypto App</title>
+
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+          crossorigin="anonymous">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<header th:replace="fragments/header"></header>
+
+<section class="flex-grow-1"
+         th:replace="${bodyContent}">
+</section>
+
+<footer th:replace="fragments/footer"></footer>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abk41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGaJZDwmQp8r+F86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy70O9r+YlE3MoMylkzW1C9IvoRxT2MZw1T"
+        crossorigin="anonymous"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const customSelect = document.getElementById('coinSelect');
+        if (!customSelect) return;
+
+        const selectSelected = customSelect.querySelector('.select-selected');
+        const selectItems = customSelect.querySelector('.select-items');
+        const selectOptions = customSelect.querySelectorAll('.select-item');
+        const selectedValueInput = document.getElementById('selectedValue');
+        const selectedCoinSpan = document.getElementById('selectedCoin');
+
+        function closeDropdown() {
+            if (selectItems) {
+                selectItems.style.display = 'none';
+            }
+        }
+
+        function openDropdown() {
+            if (selectItems) {
+                selectItems.style.display = 'block';
+            }
+        }
+
+        selectSelected.addEventListener('click', function (event) {
+            event.stopPropagation();
+            if (!selectItems) return;
+
+            const isOpen = selectItems.style.display === 'block';
+            if (isOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        selectOptions.forEach(option => {
+            option.addEventListener('click', function (event) {
+                event.stopPropagation();
+
+                const value = this.dataset.value;
+                const text = this.textContent.trim();
+
+                if (selectedValueInput) selectedValueInput.value = value;
+                if (selectedCoinSpan) selectedCoinSpan.textContent = text;
+
+                selectOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+
+                closeDropdown();
+            });
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!customSelect.contains(event.target)) {
+                closeDropdown();
+            }
+        });
+
+        closeDropdown();
+    });
+</script>
+
+</body>
+</html>
